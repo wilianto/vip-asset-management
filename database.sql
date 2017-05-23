@@ -1,4 +1,4 @@
-CREATE TABLE vip_asset;
+CREATE DATABASE vip_asset;
 USE vip_asset;
 
 CREATE TABLE assets (
