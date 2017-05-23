@@ -216,7 +216,7 @@ func getSign(data string, secret string) string {
 }
 
 func recordAssetToDb(balance Balance, balanceHold Balance, price Rate) int {
-	dbDsn := os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASS") + "@localhost/" + os.Getenv("DB_NAME")
+	dbDsn := os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASS") + "@tcp(localhost:3306)/" + os.Getenv("DB_NAME")
 	db, err := sql.Open("mysql", dbDsn)
 	if err != nil {
 		log.Fatal(err)
