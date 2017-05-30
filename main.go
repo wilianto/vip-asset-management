@@ -37,6 +37,42 @@ type Return struct {
 	BalanceHold Balance `json:"balance_hold"`
 }
 
+type JsonAsset struct {
+	PingTime     time.Time `json:"ping_time"`
+	Idr          float64   `json:"idr"`
+	Btc          float64   `json:"btc"`
+	Ltc          float64   `json:"ltc"`
+	Doge         float64   `json:"doge"`
+	Xrp          float64   `json:"xrp"`
+	Drk          float64   `json:"drk"`
+	Bts          float64   `json:"btc"`
+	Nxt          float64   `json:"nxt"`
+	Str          float64   `json:"str"`
+	Nem          float64   `json:"nem"`
+	Eth          float64   `json:"eth"`
+	IdrHold      float64   `json:"idr_hold"`
+	BtcHold      float64   `json:"btc_hold"`
+	LtcHold      float64   `json:"ltc_hold"`
+	DogeHold     float64   `json:"doge_hold"`
+	XrpHold      float64   `json:"xrp_hold"`
+	DrkHold      float64   `json:"drk_hold"`
+	BtsHold      float64   `json:"btc_hold"`
+	NxtHold      float64   `json:"nxt_hold"`
+	StrHold      float64   `json:"str_hold"`
+	NemHold      float64   `json:"nem_hold"`
+	EthHold      float64   `json:"eth_hold"`
+	PriceBtcIdr  float64   `json:"price_btc_idr"`
+	PriceLtcBtc  float64   `json:"price_ltc_btc"`
+	PriceDogeBtc float64   `json:"price_doge_btc"`
+	PriceXrpBtc  float64   `json:"price_xrp_btc"`
+	PriceDrkBtc  float64   `json:"price_drk_btc"`
+	PriceBtsBtc  float64   `json:"price_bts_btc"`
+	PriceNxtBtc  float64   `json:"price_nxt_btc"`
+	PriceStrBtc  float64   `json:"price_str_btc"`
+	PriceNemBtc  float64   `json:"price_nem_btc"`
+	PriceEthBtc  float64   `json:"price_eth_btc"`
+}
+
 type Balance struct {
 	Idr  float64 `json:"idr"`
 	Btc  float64 `json:"btc,string"`
@@ -72,6 +108,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleGetInfo)
 	mux.HandleFunc("/record-asset", handleRecordAsset)
+	mux.HandleFunc("/get-asset", handleGetAsset)
 	http.ListenAndServe(":8000", mux)
 }
 
@@ -122,6 +159,60 @@ func handleRecordAsset(w http.ResponseWriter, r *http.Request) {
 	currentPrice := getCurrentPrice()
 	id := recordAssetToDb(info.Return.Balance, info.Return.BalanceHold, currentPrice.Price)
 	fmt.Fprintf(w, "INSERT ID: %d", id)
+}
+
+func handleGetAsset(w http.ResponseWriter, r *http.Request) {
+	var jsonAssets []JsonAsset
+	limit, _ := strconv.ParseInt(r.FormValue("limit"), 10, 32)
+	rows := getAssetFromDb(int(limit))
+	for rows.Next() {
+		var jsonAsset JsonAsset
+		var id int
+		var pingTime time.Time
+		var idr, btc, ltc, doge, xrp, drk, bts, nxt, str, nem, eth, idrHold, btcHold, ltcHold, dogeHold, xrpHold, drkHold, btsHold, nxtHold, strHold, nemHold, ethHold, priceBtcIdr, priceLtcBtc, priceDogeBtc, priceXrpBtc, priceDrkBtc, priceBtsBtc, priceNxtBtc, priceStrBtc, priceNemBtc, priceEthBtc float64
+
+		err := rows.Scan(&id, &pingTime, &idr, &btc, &ltc, &doge, &xrp, &drk, &bts, &nxt, &str, &nem, &eth, &idrHold, &btcHold, &ltcHold, &dogeHold, &xrpHold, &drkHold, &btsHold, &nxtHold, &strHold, &nemHold, &ethHold, &priceBtcIdr, &priceLtcBtc, &priceDogeBtc, &priceXrpBtc, &priceDrkBtc, &priceBtsBtc, &priceNxtBtc, &priceStrBtc, &priceNemBtc, &priceEthBtc)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		jsonAsset = JsonAsset{
+			PingTime:     pingTime,
+			Idr:          idr,
+			Btc:          btc,
+			Ltc:          ltc,
+			Doge:         doge,
+			Xrp:          xrp,
+			Drk:          drk,
+			Bts:          bts,
+			Nxt:          nxt,
+			Str:          str,
+			Nem:          nem,
+			Eth:          eth,
+			IdrHold:      idrHold,
+			BtcHold:      btcHold,
+			LtcHold:      ltcHold,
+			DogeHold:     dogeHold,
+			XrpHold:      xrpHold,
+			DrkHold:      drkHold,
+			BtsHold:      btsHold,
+			NxtHold:      nxtHold,
+			StrHold:      strHold,
+			NemHold:      nemHold,
+			EthHold:      ethHold,
+			PriceBtcIdr:  priceBtcIdr,
+			PriceLtcBtc:  priceLtcBtc,
+			PriceDogeBtc: priceDogeBtc,
+			PriceXrpBtc:  priceXrpBtc,
+			PriceDrkBtc:  priceDrkBtc,
+			PriceBtsBtc:  priceBtsBtc,
+			PriceNxtBtc:  priceNxtBtc,
+			PriceStrBtc:  priceStrBtc,
+			PriceNemBtc:  priceNemBtc,
+			PriceEthBtc:  priceEthBtc}
+		jsonAssets = append(jsonAssets, jsonAsset)
+	}
+	json.NewEncoder(w).Encode(&jsonAssets)
 }
 
 func getInfo() Info {
@@ -215,9 +306,12 @@ func getSign(data string, secret string) string {
 	return hex.EncodeToString(sign.Sum(nil))
 }
 
+func getDsn() string {
+	return os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASS") + "@tcp(localhost:3306)/" + os.Getenv("DB_NAME") + "?parseTime=true"
+}
+
 func recordAssetToDb(balance Balance, balanceHold Balance, price Rate) int {
-	dbDsn := os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASS") + "@tcp(localhost:3306)/" + os.Getenv("DB_NAME")
-	db, err := sql.Open("mysql", dbDsn)
+	db, err := sql.Open("mysql", getDsn())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -240,4 +334,25 @@ func recordAssetToDb(balance Balance, balanceHold Balance, price Rate) int {
 	}
 	lastId, _ := res.LastInsertId()
 	return int(lastId)
+}
+
+func getAssetFromDb(limit int) *sql.Rows {
+	db, err := sql.Open("mysql", getDsn())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	errPing := db.Ping()
+	if errPing != nil {
+		log.Fatal(errPing)
+	}
+
+	sql := "SELECT * FROM assets ORDER BY id DESC LIMIT " + strconv.Itoa(limit)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return rows
 }
