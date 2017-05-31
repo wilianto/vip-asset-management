@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -141,8 +140,7 @@ func handleGetInfo(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s %g \n", "NEM", info.Return.BalanceHold.Nem)
 		fmt.Fprintf(w, "%s %g \n\n\n", "ETH", info.Return.BalanceHold.Eth)
 	} else {
-		fmt.Fprintln(w, "[ERROR] "+info.Error)
-		log.Fatal("[ERROR] " + info.Error)
+		panic("[ERROR] " + info.Error)
 	}
 
 	currentPrice := getCurrentPrice()
@@ -174,7 +172,7 @@ func handleGetAsset(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&id, &pingTime, &idr, &btc, &ltc, &doge, &xrp, &drk, &bts, &nxt, &str, &nem, &eth, &idrHold, &btcHold, &ltcHold, &dogeHold, &xrpHold, &drkHold, &btsHold, &nxtHold, &strHold, &nemHold, &ethHold, &priceBtcIdr, &priceLtcBtc, &priceDogeBtc, &priceXrpBtc, &priceDrkBtc, &priceBtsBtc, &priceNxtBtc, &priceStrBtc, &priceNemBtc, &priceEthBtc)
 
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		jsonAsset = JsonAsset{
 			PingTime:     pingTime,
@@ -222,7 +220,7 @@ func getInfo() Info {
 
 	err := json.Unmarshal(body, &info)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return info
 }
@@ -230,19 +228,19 @@ func getInfo() Info {
 func getCurrentPrice() CurrentPrice {
 	res, err := http.Get("https://vip.bitcoin.co.id/api/eth_btc/webdata")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	var currentPrice CurrentPrice
 	errJson := json.Unmarshal(body, &currentPrice)
 	if errJson != nil {
-		log.Fatal(errJson)
+		panic(errJson)
 	}
 
 	return currentPrice
@@ -281,20 +279,20 @@ func sendRequest(data string, url string) []byte {
 	req.Header.Add("Key", os.Getenv("VIP_KEY"))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return body
 }
@@ -313,24 +311,24 @@ func getDsn() string {
 func recordAssetToDb(balance Balance, balanceHold Balance, price Rate) int {
 	db, err := sql.Open("mysql", getDsn())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer db.Close()
 
 	errPing := db.Ping()
 	if errPing != nil {
-		log.Fatal(errPing)
+		panic(errPing)
 	}
 
 	stmt, err := db.Prepare("INSERT INTO assets (ping_time, idr, btc, ltc, doge, xrp, drk, bts, nxt, str, nem, eth, idr_hold, btc_hold, ltc_hold, doge_hold, xrp_hold, drk_hold, bts_hold, nxt_hold, str_hold, nem_hold, eth_hold, price_btc_idr, price_ltc_btc, price_doge_btc, price_xrp_btc, price_drk_btc, price_bts_btc, price_nxt_btc, price_str_btc, price_nem_btc, price_eth_btc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(time.Now().Format("2006-01-02 03:04:05"), balance.Idr, balance.Btc, balance.Ltc, balance.Doge, balance.Xrp, balance.Drk, balance.Bts, balance.Nxt, balance.Str, balance.Nem, balance.Eth, balanceHold.Idr, balanceHold.Btc, balanceHold.Ltc, balanceHold.Doge, balanceHold.Xrp, balanceHold.Drk, balanceHold.Bts, balanceHold.Nxt, balanceHold.Str, balanceHold.Nem, balanceHold.Eth, price.BtcIdr, price.LtcBtc, price.DogeBtc, price.XrpBtc, price.DrkBtc, price.BtsBtc, price.NxtBtc, price.StrBtc, price.NemBtc, price.EthBtc)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	lastId, _ := res.LastInsertId()
 	return int(lastId)
@@ -339,19 +337,19 @@ func recordAssetToDb(balance Balance, balanceHold Balance, price Rate) int {
 func getAssetFromDb(limit int) *sql.Rows {
 	db, err := sql.Open("mysql", getDsn())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer db.Close()
 
 	errPing := db.Ping()
 	if errPing != nil {
-		log.Fatal(errPing)
+		panic(errPing)
 	}
 
 	sql := "SELECT * FROM assets ORDER BY id DESC LIMIT " + strconv.Itoa(limit)
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	return rows
