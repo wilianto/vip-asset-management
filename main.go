@@ -70,6 +70,7 @@ type JsonAsset struct {
 	PriceStrBtc  float64   `json:"price_str_btc"`
 	PriceNemBtc  float64   `json:"price_nem_btc"`
 	PriceEthBtc  float64   `json:"price_eth_btc"`
+	TotalAsset   float64   `json:"total_asset"`
 }
 
 type Balance struct {
@@ -190,6 +191,44 @@ func handleGetAsset(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
+		balance := Balance{
+			Idr:  idr,
+			Btc:  btc,
+			Ltc:  ltc,
+			Doge: doge,
+			Xrp:  xrp,
+			Drk:  drk,
+			Bts:  bts,
+			Nxt:  nxt,
+			Str:  str,
+			Nem:  nem,
+			Eth:  eth}
+
+		balanceHold := Balance{
+			Idr:  idrHold,
+			Btc:  btcHold,
+			Ltc:  ltcHold,
+			Doge: dogeHold,
+			Xrp:  xrpHold,
+			Drk:  drkHold,
+			Bts:  btsHold,
+			Nxt:  nxtHold,
+			Str:  strHold,
+			Nem:  nemHold,
+			Eth:  ethHold}
+
+		price := Rate{
+			BtcIdr:  priceBtcIdr,
+			LtcBtc:  priceLtcBtc,
+			DogeBtc: priceDogeBtc,
+			XrpBtc:  priceXrpBtc,
+			DrkBtc:  priceDrkBtc,
+			BtsBtc:  priceBtsBtc,
+			NxtBtc:  priceNxtBtc,
+			StrBtc:  priceStrBtc,
+			NemBtc:  priceNemBtc,
+			EthBtc:  priceEthBtc}
+
 		jsonAsset = JsonAsset{
 			PingTime:     pingTime,
 			Idr:          idr,
@@ -223,7 +262,8 @@ func handleGetAsset(w http.ResponseWriter, r *http.Request) {
 			PriceNxtBtc:  priceNxtBtc,
 			PriceStrBtc:  priceStrBtc,
 			PriceNemBtc:  priceNemBtc,
-			PriceEthBtc:  priceEthBtc}
+			PriceEthBtc:  priceEthBtc,
+			TotalAsset:   calculateTotalIdr(balance, balanceHold, price)}
 		jsonAssets = append(jsonAssets, jsonAsset)
 	}
 	json.NewEncoder(w).Encode(&jsonAssets)
